@@ -11,6 +11,7 @@ class PDMAProblem(Problem):
     
     #Constructor
     def __init__(self):
+        
         #medic_list and patient_list are used as status
         self.medic_list = []             #[[medic_code,efficiency,[patient_order]],...]
         self.label_list = []             #[[label_code,max_wait_time,consult_time],...]

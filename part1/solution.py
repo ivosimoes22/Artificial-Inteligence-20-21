@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from search import Problem
 import sys
+from itertools import permutations
 
 
 class Doctor():
@@ -54,6 +55,7 @@ class PDMAProblem(Problem):
         self.medicDict = {}
         self.labelDict = {}
         self.patientDict = {}
+        self.status = []
         
     #medic_list and patient_list are used as status
     #medic_list = []             #[[medic_code,efficiency,avalability],...]
@@ -74,14 +76,11 @@ class PDMAProblem(Problem):
 
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
-        for medic in s[0]:
-            if medic[2] == 0:
-                for patient in s[1]:
-                    if patient[3]:
-                        pass
-                    else:
-                        #print("Move patient", patient[0], "to doctor", medic[0], "\n")
-                        actions.append([medic[0],patient[0]])
+        permuts = permutations(list(s.keys()), len(list(self.medicDict.keys())))
+        
+        for i in permuts:
+            actions.append(zip(list(self.medicDict.keys()),i))
+        
         return actions
         
     def result(self,status,a):
@@ -141,8 +140,9 @@ class PDMAProblem(Problem):
                         #self.patient_list.append(temp[1:])
         else:
             sys.exit("Wrong file format, exiting...\n")
-            
-        #status = [self.medic_list, self.patient_list]
+
+
+        status = []
 
         
         

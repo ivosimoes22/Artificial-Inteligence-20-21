@@ -6,10 +6,12 @@ def main():
     file_name = sys.argv[1]
     problem = PDMAProblem()
     problem.load(file_name)
-    x = problem.getPatientDict()["001"]
-    print(x.getCode())
-    print(x.getTimePassed())
-    print(x.getLabel())
+    x = problem.getPatientDict()
+    problem.actions(x)
+    #x = problem.getPatientDict()["001"]
+    # print(x.getCode())
+    # print(x.getTimePassed())
+    # print(x.getLabel())
     #print(PDMAProblem.medic_list[0])
     #print(PDMAProblem.label_list)
     #print(PDMAProblem.patient_list)

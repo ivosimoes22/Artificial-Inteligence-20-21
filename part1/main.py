@@ -1,5 +1,6 @@
 from solution import PDMAProblem
 import sys
+import copy
 
 def main():
     #file_name = input("Please enter problem file name:\n")   
@@ -7,7 +8,16 @@ def main():
     problem = PDMAProblem()
     problem.load(file_name)
     x = problem.getPatientDict()
-    problem.actions(x)
+    ac = problem.actions(x)
+    s1 = problem.result(x, ac[0])
+    problem.getStatus(s1)
+    s1t = copy.deepcopy(s1)
+    print("\n")
+    s2 = problem.result(s1t, ac[0])
+    problem.getStatus(s1)
+    problem.getStatus(s2)
+    print(problem.path_cost(0,s1,0,s2))
+    #print(x[0][0][0])
     #x = problem.getPatientDict()["001"]
     # print(x.getCode())
     # print(x.getTimePassed())

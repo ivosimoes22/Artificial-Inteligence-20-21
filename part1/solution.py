@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from abc import ABC, abstractmethod
 from search import Problem
 import sys
 from itertools import permutations
@@ -20,8 +19,9 @@ class Doctor():
 class Patient():
     def __init__(self, code, timePassed, labelCode):
         self.code = code
-        self.timePassed = timePassed
+        self.timePassed = float(timePassed)
         self.labelCode = labelCode
+        self.timePassedConsult = 0
 
     #Gettters
     def getCode(self):
@@ -30,12 +30,21 @@ class Patient():
         return self.timePassed
     def getLabel(self):
         return self.labelCode
+    def getTimePassedConsult(self):
+        return self.timePassedConsult
+
+    def incPassedTime(self, rateDoc=1, isConsult=0):
+        if isConsult:
+            self.timePassedConsult += 5*rateDoc
+        else:
+            self.timePassed += 5
+
 
 class Label():
     def __init__(self, code, maxWaitingTime, consultationTime):
         self.code = code
-        self.maxWaitingTime = maxWaitingTime
-        self.consultationTime = consultationTime
+        self.maxWaitingTime = int(maxWaitingTime)
+        self.consultationTime = int(consultationTime)
 
     #getters
     def getCode(self):
@@ -55,16 +64,8 @@ class PDMAProblem(Problem):
         self.medicDict = {}
         self.labelDict = {}
         self.patientDict = {}
-        self.status = []
+        self.initial = {}
         
-    #medic_list and patient_list are used as status
-    #medic_list = []             #[[medic_code,efficiency,avalability],...]
-    #label_list = []             #[[label_code,max_wait_time,consult_time],...]
-    #patient_list = []           #[[patient_code,current_wait,label_code,bool_sent_to_consultation],...]
-    #solution = []               #[[medic_code,[patient_order]],...]
-    #medics_ocupied = 0
-
-    
     #Getters
     def getMedicDict(self):
         return self.medicDict
@@ -73,49 +74,54 @@ class PDMAProblem(Problem):
     def getPatientDict(self):
         return self.patientDict
 
-
+    def getStatus(self, status):
+        for x in status.keys():
+            print("Code " + str(status[x].getCode()))
+            print("Time Waiting " + str(status[x].getTimePassed()))
+            print("Time Consultation " + str(status[x].getTimePassedConsult()))
+            print("\n")
+        
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
         permuts = permutations(list(s.keys()), len(list(self.medicDict.keys())))
         
         for i in permuts:
-            actions.append(zip(list(self.medicDict.keys()),i))
+            actions.append(list(zip(list(self.medicDict.keys()),i)))
         
         return actions
         
     def result(self,status,a):
-        # num_medics_processed = 0
-        # for medic in self.medic_list:
-        #     if medic[0] == a[0]:
-        #         if len(self.solution[num_medics_processed]) == 2:
-        #             self.solution[num_medics_processed][1].append(a[1])
-        #         else:
-        #             self.solution[num_medics_processed].append([a[1]])
-        #         self.medic_list[num_medics_processed][2] = a[1]
-        #         num_patients_processed = 0
-        #         for patient in self.patient_list:
-        #             if patient[0] == a[1]:
-        #                 status[1][num_patients_processed][3] = 1
-        #             num_patients_processed += 1 
-        #     else: pass
-        #     num_medics_processed += 1 
-        # medics_occupied += 1
-        # if medics_occupied == len(self.medic_list):
-        #     for medic in self.medic_list:
-        #         for patient in self.patient_list.index:
-        #                 if (medic[2] == patient[0]):
-        #                     for label in self.label_list:
-        #                         if (label[0] == patient[2]):
-        pass
-                                    
-
+        patients_attended = []
+        for singleAction in a:
+            medic_rate = self.medicDict[singleAction[0]].getRate()
+            status[str(singleAction[1])].incPassedTime(float(medic_rate),1)
+            patients_attended.append(singleAction[1])
+          
+        for x in status.keys():
+            if x not in patients_attended:
+                status[str(x)].incPassedTime()
+            
         return status
 
-    def goal_test(self,s):
-        pass
+    def goal_test(self,status):
+        for x in status.keys():
+            max_wait_time = self.labelDict[status[x].getLabel()].getMaxWaitingTime()
+            consul_target_time = self.labelDict[status[x].getLabel()].getConsultationTime()
+            if status[x].getTimePassed() > max_wait_time or status[x].getTimePassedConsult() < consul_target_time:
+                return False
+        return True
 
     def path_cost(self,c,status1,a,status2):
-        pass
+        c1 = 0 
+        c2 = 0
+        for x in status1.keys():
+            c1 += status1[x].getTimePassed()**2
+            print(status1[x].getTimePassed())
+        for x in status2.keys():
+            c2 += (status2[x].getTimePassed()**2)
+        print("c1 " + str(c1) + " c2 " + str(c2))
+        return (c2 - c1)
+
 
     def load(self,f):
         if(".txt" in f):
@@ -140,10 +146,6 @@ class PDMAProblem(Problem):
                         #self.patient_list.append(temp[1:])
         else:
             sys.exit("Wrong file format, exiting...\n")
-
-
-        status = []
-
         
         
     def save(self,f,s):

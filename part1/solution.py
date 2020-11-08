@@ -8,12 +8,19 @@ class Doctor():
     def __init__(self, code, efficiencyRate):
         self.code = code
         self.rate = efficiencyRate
+        self.patientList = []
 
     #getters
     def getCode(self):
         return self.code
     def getRate(self):
         return self.rate
+    def getPatientList(self):
+        return self.patientList
+
+    #setter
+    def setNewPatient(self, patientCode):
+        self.patientList.append(patientCode)
 
 
 class Patient():
@@ -55,7 +62,6 @@ class Label():
         return self.consultationTime
 
 
-
 class PDMAProblem(Problem):
     
     #Constructor
@@ -66,6 +72,7 @@ class PDMAProblem(Problem):
         self.patientDict = {}
         self.initial = {}
         
+    
     #Getters
     def getMedicDict(self):
         return self.medicDict
@@ -80,6 +87,10 @@ class PDMAProblem(Problem):
             print("Time Waiting " + str(status[x].getTimePassed()))
             print("Time Consultation " + str(status[x].getTimePassedConsult()))
             print("\n")
+
+    def addAction(self,a):
+        for singleAction in a:
+            self.medicDict[singleAction[0]].getPatientList().append(singleAction[1])
         
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
@@ -100,7 +111,7 @@ class PDMAProblem(Problem):
         for x in status.keys():
             if x not in patients_attended:
                 status[str(x)].incPassedTime()
-            
+        self.addAction(a)    
         return status
 
     def goal_test(self,status):
@@ -128,27 +139,33 @@ class PDMAProblem(Problem):
                 prob_file = open(f,"r")
                 line_info = prob_file.readlines()
                 for line in line_info:
-                    #print(line)
                     if ("MD" in line):
                         temp = line.split()
                         temp.append(0)
                         self.medicDict[str(temp[1])] = Doctor(temp[1], temp[2])
-                        #self.medic_list.append(temp[1:])
-                        #self.solution.append([temp[1]])
                     elif("PL" in line):
                         temp = line.split()
-                        #self.label_list.append(temp[1:])
                         self.labelDict[str(temp[1])] = Label(temp[1], temp[2], temp[3])
                     elif("P " in line):
                         temp = line.split()
                         temp.append(0)
                         self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
-                        #self.patient_list.append(temp[1:])
         else:
             sys.exit("Wrong file format, exiting...\n")
+            self.initial = self.patientDict
         
         
     def save(self,f,s):
+
+        f = open("solution.txt", "a")
+        medicDict = getMedicDict()
+        for d in medicDict:
+        f.write("")
+        f.close()
+
+        if s == None:
+            f.write("Infeasible")
+
         
         pass
     def search(self):

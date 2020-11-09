@@ -9,6 +9,10 @@ def main():
     problem.load(file_name)
     x = problem.getPatientDict()
     ac = problem.actions(x)
+    for i in ac:
+        print(tuple(i))
+    wait = input("Press Enter to continue")
+    
     s1 = problem.result(x, ac[0])
     problem.getStatus(s1)
     s1t = copy.deepcopy(s1)
@@ -17,6 +21,9 @@ def main():
     problem.getStatus(s1)
     problem.getStatus(s2)
     print(problem.path_cost(0,s1,0,s2))
+    f = open("solution.txt", "a")
+    y = problem.getMedicDict()
+    problem.save(f)
     #print(x[0][0][0])
     #x = problem.getPatientDict()["001"]
     # print(x.getCode())

@@ -155,15 +155,22 @@ class PDMAProblem(Problem):
             self.initial = self.patientDict
         
         
-    def save(self,f,s):
+    def save(self,f):
 
         f = open("solution.txt", "a")
-        medicDict = getMedicDict()
-        for d in medicDict:
-        f.write("")
+        medicDict = self.medicDict
+        for key, medic in medicDict.items():
+            #substituir patient list (que contem todos os pacientes) pela lista de pacientes de cada médico 
+            PatientList = medic.getPatientList()
+            f.write("MD " + key + " ")
+            for p in PatientList:
+                print(p + " ")
+                f.write(p + " ")
+            f.write("\n")
+            print("\n")
         f.close()
 
-        if s == None:
+        if medicDict == None:
             f.write("Infeasible")
 
         

@@ -160,14 +160,12 @@ class PDMAProblem(Problem):
         f = open("solution.txt", "a")
         medicDict = self.medicDict
         for key, medic in medicDict.items():
-            #substituir patient list (que contem todos os pacientes) pela lista de pacientes de cada médico 
+            #Lista mal criada?
             PatientList = medic.getPatientList()
             f.write("MD " + key + " ")
             for p in PatientList:
-                print(p + " ")
                 f.write(p + " ")
             f.write("\n")
-            print("\n")
         f.close()
 
         if medicDict == None:

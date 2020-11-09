@@ -30,7 +30,7 @@ class Patient():
         self.labelCode = labelCode
         self.timePassedConsult = 0
 
-    #Gettters
+    #gettters
     def getCode(self):
         return self.code
     def getTimePassed(self):
@@ -65,13 +65,11 @@ class Label():
 class PDMAProblem(Problem):
     
     #Constructor
-    #def __init__(self):
     def __init__(self):
         self.medicDict = {}
         self.labelDict = {}
         self.patientDict = {}
         self.initial = {}
-        
     
     #Getters
     def getMedicDict(self):
@@ -81,6 +79,7 @@ class PDMAProblem(Problem):
     def getPatientDict(self):
         return self.patientDict
 
+
     def getStatus(self, status):
         for x in status.keys():
             print("Code " + str(status[x].getCode()))
@@ -88,10 +87,12 @@ class PDMAProblem(Problem):
             print("Time Consultation " + str(status[x].getTimePassedConsult()))
             print("\n")
 
+
     def addAction(self,a):
         for singleAction in a:
             self.medicDict[singleAction[0]].getPatientList().append(singleAction[1])
-        
+
+
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
         permuts = permutations(list(s.keys()), len(list(self.medicDict.keys())))
@@ -101,6 +102,7 @@ class PDMAProblem(Problem):
         
         return actions
         
+
     def result(self,status,a):
         patients_attended = []
         for singleAction in a:
@@ -114,6 +116,7 @@ class PDMAProblem(Problem):
         self.addAction(a)    
         return status
 
+
     def goal_test(self,status):
         for x in status.keys():
             max_wait_time = self.labelDict[status[x].getLabel()].getMaxWaitingTime()
@@ -121,6 +124,7 @@ class PDMAProblem(Problem):
             if status[x].getTimePassed() > max_wait_time or status[x].getTimePassedConsult() < consul_target_time:
                 return False
         return True
+
 
     def path_cost(self,c,status1,a,status2):
         c1 = 0 
@@ -130,7 +134,7 @@ class PDMAProblem(Problem):
             print(status1[x].getTimePassed())
         for x in status2.keys():
             c2 += (status2[x].getTimePassed()**2)
-        print("c1 " + str(c1) + " c2 " + str(c2))
+        #print("c1 " + str(c1) + " c2 " + str(c2))
         return (c2 - c1)
 
 
@@ -152,10 +156,10 @@ class PDMAProblem(Problem):
                         self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
         else:
             sys.exit("Wrong file format, exiting...\n")
-            self.initial = self.patientDict
+        self.initial = self.patientDict
         
         
-    def save(self,f):
+    def save(self, f, state):
 
         f = open("solution.txt", "a")
         medicDict = self.medicDict
@@ -171,8 +175,7 @@ class PDMAProblem(Problem):
         if medicDict == None:
             f.write("Infeasible")
 
-        
-        pass
+
     def search(self):
         pass
     

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from search import Problem, depth_first_tree_search, depth_first_graph_search, bidirectional_search
+from search import Problem, depth_first_tree_search, depth_first_graph_search, bidirectional_search, breadth_first_tree_search
 import sys
 from itertools import permutations
+from copy import deepcopy
 
 
 class Doctor():
@@ -99,23 +100,30 @@ class PDMAProblem(Problem):
         
         for i in permuts:
             actions.append(list(zip(list(self.medicDict.keys()),i)))
-        
+        print(actions)
         return actions
         
 
-    def result(self,status,a):
+    def result(self,s,a):
+        print(a)
+        status = deepcopy(s)
         patients_attended = []
         for singleAction in a:
+            print(singleAction)
             medic_rate = self.medicDict[singleAction[0]].getRate()
             status[str(singleAction[1])].incPassedTime(float(medic_rate),1)
-            if status[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict[status[str(singleAction[1])].getLabelCode()].getConsultationTime() :
+            if status[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[status[str(singleAction[1])].getLabel()].getConsultationTime() :
                 del status[str(singleAction[1])]
             patients_attended.append(singleAction[1])
+        print(patients_attended)
           
         for x in status.keys():
             if x not in patients_attended:
                 status[str(x)].incPassedTime()
-        self.addAction(a)    
+                if status[str(x)].getTimePassed() > self.getLabelDict()[status[str(singleAction[1])].getLabel()].getMaxWaitingTime():
+                    return
+        self.addAction(a) 
+        self.getStatus(status)   
         return status
 
 
@@ -133,7 +141,7 @@ class PDMAProblem(Problem):
         c2 = 0
         for x in status1.keys():
             c1 += status1[x].getTimePassed()**2
-            print(status1[x].getTimePassed())
+            #print(status1[x].getTimePassed())
         for x in status2.keys():
             c2 += (status2[x].getTimePassed()**2)
         #print("c1 " + str(c1) + " c2 " + str(c2))
@@ -159,6 +167,7 @@ class PDMAProblem(Problem):
         else:
             sys.exit("Wrong file format, exiting...\n")
         self.initial = self.patientDict
+        self.getStatus(self.initial)
         
         
     def save(self, f):
@@ -179,7 +188,7 @@ class PDMAProblem(Problem):
 
 
     def search(self, p):
-        if depth_first_tree_search(p) == True:
+        if breadth_first_tree_search(p) == True:
             print("Found Solution")
 
     

@@ -1,5 +1,5 @@
 from solution import PDMAProblem
-from search import breadth_first_tree_search
+import search
 import sys
 import copy
 
@@ -7,7 +7,7 @@ def main():
     file_name = sys.argv[1]
     problem = PDMAProblem()
     problem.load(file_name)
-    x = breadth_first_tree_search(problem)
+    x = search.breadth_first_tree_search(problem)
     #x = problem.getPatientDict()
     #ac = problem.actions(x)
     #s1 = problem.result(x, ac[0])

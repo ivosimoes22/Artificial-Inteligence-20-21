@@ -2,7 +2,7 @@
 from search import Problem, depth_first_tree_search, depth_first_graph_search, bidirectional_search, breadth_first_tree_search
 import sys
 from itertools import permutations
-from copy import deepcopy
+from copy import deepcopy, copy 
 
 
 class Doctor():
@@ -62,6 +62,20 @@ class Label():
     def getConsultationTime(self):
         return self.consultationTime
 
+class State():
+    def __init__(self, patientDict):
+        self.patientDict = patientDict
+
+    def getPatientDict(self):
+        return self.patientDict
+
+    def getStatus(self):
+        for x in self.patientDict.keys():
+            print("Code " + str(self.patientDict[x].getCode()))
+            print("Time Waiting " + str(self.patientDict[x].getTimePassed()))
+            print("Time Consultation " + str(self.patientDict[x].getTimePassedConsult()))
+            print("\n")
+
 
 class PDMAProblem(Problem):
     
@@ -81,13 +95,6 @@ class PDMAProblem(Problem):
         return self.patientDict
 
 
-    def getStatus(self, status):
-        for x in status.keys():
-            print("Code " + str(status[x].getCode()))
-            print("Time Waiting " + str(status[x].getTimePassed()))
-            print("Time Consultation " + str(status[x].getTimePassedConsult()))
-            print("\n")
-
 
     def addAction(self,a):
         for singleAction in a:
@@ -106,7 +113,7 @@ class PDMAProblem(Problem):
 
     def result(self,s,a):
         print(a)
-        status = deepcopy(s)
+        status = copy(s)
         patients_attended = []
         for singleAction in a:
             print(singleAction)
@@ -115,15 +122,14 @@ class PDMAProblem(Problem):
             if status[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[status[str(singleAction[1])].getLabel()].getConsultationTime() :
                 del status[str(singleAction[1])]
             patients_attended.append(singleAction[1])
-        print(patients_attended)
+        #print(patients_attended)
           
         for x in status.keys():
             if x not in patients_attended:
                 status[str(x)].incPassedTime()
-                if status[str(x)].getTimePassed() > self.getLabelDict()[status[str(singleAction[1])].getLabel()].getMaxWaitingTime():
-                    return
+                #if status[str(x)].getTimePassed() > self.getLabelDict()[status[str(singleAction[1])].getLabel()].getMaxWaitingTime():
         self.addAction(a) 
-        self.getStatus(status)   
+        #self.getStatus(status)   
         return status
 
 
@@ -166,8 +172,8 @@ class PDMAProblem(Problem):
                         self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
         else:
             sys.exit("Wrong file format, exiting...\n")
-        self.initial = self.patientDict
-        self.getStatus(self.initial)
+        self.initial = State(self.patientDict)
+        #self.getStatus(self.initial)
         
         
     def save(self, f):
@@ -175,7 +181,6 @@ class PDMAProblem(Problem):
         f = open("solution.txt", "a")
         medicDict = self.medicDict
         for key, medic in medicDict.items():
-            #Lista mal criada?
             PatientList = medic.getPatientList()
             f.write("MD " + key + " ")
             for p in PatientList:

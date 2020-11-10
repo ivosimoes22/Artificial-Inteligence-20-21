@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from search import Problem
+from search import Problem, depth_first_tree_search, depth_first_graph_search, bidirectional_search
 import sys
 from itertools import permutations
 
@@ -176,6 +176,8 @@ class PDMAProblem(Problem):
             f.write("Infeasible")
 
 
-    def search(self):
-        pass
+    def search(self, p):
+        if depth_first_tree_search(p) == True:
+            print("Found Solution")
+
     

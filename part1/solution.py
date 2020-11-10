@@ -108,6 +108,8 @@ class PDMAProblem(Problem):
         for singleAction in a:
             medic_rate = self.medicDict[singleAction[0]].getRate()
             status[str(singleAction[1])].incPassedTime(float(medic_rate),1)
+            if status[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict[status[str(singleAction[1])].getLabelCode()].getConsultationTime() :
+                del status[str(singleAction[1])]
             patients_attended.append(singleAction[1])
           
         for x in status.keys():

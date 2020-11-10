@@ -159,7 +159,7 @@ class PDMAProblem(Problem):
         self.initial = self.patientDict
         
         
-    def save(self, f, state):
+    def save(self, f):
 
         f = open("solution.txt", "a")
         medicDict = self.medicDict

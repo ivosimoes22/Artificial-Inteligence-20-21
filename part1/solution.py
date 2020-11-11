@@ -64,7 +64,7 @@ class Label():
         return self.consultationTime
 
 class State():
-    def __init__(self, patientDict=None, consultations=None, mediclistkeys = None, c=None):
+    def __init__(self, patientDict=None, consultations=None, mediclistkeys = None, c=0):
         self.patientDict = {}
         self.consultations = defaultdict(list)
         self.deadend = 0
@@ -74,10 +74,7 @@ class State():
             self.consultations = deepcopy(consultations)
         # if mediclistkeys is not None:
         #     self.consultations = dict.fromkeys(mediclistkeys, [])
-        if c is None:
-            self.cost = 0
-        else:
-            self.cost = c
+        self.cost = c
 
     def __lt__(self, other):
         return self.cost < other.cost
@@ -104,8 +101,7 @@ class State():
         self.patientDict = patientDict
     
     def updateCost(self, patient):
-        self.cost += self.getPatientDict()[str(patient)].getTimePassed()**2
-
+        self.cost += patient
     # def computeCost(self):
     #     for i in self.patientDict.keys():
     #         self.cost += self.patientDict[i].timePassed**2
@@ -169,8 +165,6 @@ class PDMAProblem(Problem):
 
             #Remove the patient from the patient's dictionary if he has reached the total Consultation Time
             if new_s.getPatientDict()[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.getPatientDict()[str(singleAction[1])].getLabel()].getConsultationTime() :
-                #new_s.cost += new_s.getPatientDict()[str(singleAction[1])].getTimePassed() **2
-                new_s.updateCost(str(singleAction[1]))
                 del new_s.getPatientDict()[str(singleAction[1])]
 
 
@@ -189,8 +183,6 @@ class PDMAProblem(Problem):
             #Check if any patient has exceeded the Maximum Waiting Time 
             if new_s.getPatientDict()[str(x)].getTimePassed() > self.getLabelDict()[new_s.getPatientDict()[str(x)].getLabel()].getMaxWaitingTime():
                     new_s.deadend = 1
-            #new_s.cost += new_s.getPatientDict()[x].getTimePassed() ** 2
-            new_s.updateCost(x)
         
         #print("After action\n")
         new_s.getStatus()
@@ -200,11 +192,11 @@ class PDMAProblem(Problem):
     def goal_test(self,s):
         # aqui nao assumes nada ô rapazinho
         #___________________________________________________________________________________________________________#
-        for x in s.patientDict.keys():
-           consul_target_time = self.labelDict[s.patientDict[x].labelCode].consultationTime
-           if  s.patientDict[x].timePassedConsult < consul_target_time:
-               return False
-        return True
+        # for x in s.patientDict.keys():
+        #    consul_target_time = self.labelDict[s.patientDict[x].labelCode].consultationTime
+        #    if  s.patientDict[x].timePassedConsult < consul_target_time:
+        #        return False
+        return not bool(s.patientDict)
         #___________________________________________________________________________________________________________#
 
 
@@ -213,16 +205,18 @@ class PDMAProblem(Problem):
     #só é necessário caluclar o custo de a e somar a c
     def path_cost(self,c,s1,a,s2):
 
-        # action_cost = 0
+        action_cost = 0
 
-        # for singleAction in a:
-        #     #Check if the patient is in state 2's dictionary; If he is, no cost is added (max consultation time not reached)
-        #     if str(singleAction[1]) not in s2.getPatientDict():
-        #         #Check in state 1's patient dictionary how much time the paitient waited and compute the cost 
-        #         action_cost += s1.getPatientDict()[str(singleAction[1])].getTimePassed()**2
-        # return (c + a actio_cost)
-        return  s2.cost - s1.cost
-
+        for singleAction in a:
+            #Check if the patient is in state 2's dictionary; If he is, no cost is added (max consultation time not reached)
+            if str(singleAction[1]) not in s2.getPatientDict():
+                #Check in state 1's patient dictionary how much time the paitient waited and compute the cost 
+                action_cost += s1.getPatientDict()[str(singleAction[1])].getTimePassed()**2
+        
+        #s2.updateCost(action_cost) 
+        s2.cost += action_cost
+        s2.getStatus()
+        return (c + action_cost)
 
 
         #c1 = 0 
@@ -253,13 +247,11 @@ class PDMAProblem(Problem):
                         temp = line.split()
                         temp.append(0)
                         self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
-                        initialCost+= int(temp[2]) ** 2
         else:
             sys.exit("Wrong file format, exiting...\n")
 
         self.initial = State(self.patientDict,None,self.medicDict.keys(), initialCost)
         self.initial.getStatus()
-        #self.initial.setPatientDict(self.patientDict)
         
     def save(self, f):
 

@@ -7,7 +7,9 @@ def main():
     file_name = sys.argv[1]
     problem = PDMAProblem()
     problem.load(file_name)
-    x = search.breadth_first_tree_search(problem)
+    problem.initial.getStatus()
+    problem.solution = search.breadth_first_tree_search(problem)
+    
     #x = problem.getPatientDict()
     #ac = problem.actions(x)
     #s1 = problem.result(x, ac[0])
@@ -18,8 +20,8 @@ def main():
     #problem.getStatus(s1)
     #problem.getStatus(s2)
     #print(problem.path_cost(0,s1,0,s2))
-    #f = open("solution.txt", "a")
-    #problem.save(f)
+    f = open("solution.txt", "a")
+    problem.save(f)
 
 
 if __name__ == "__main__":

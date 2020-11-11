@@ -7,8 +7,8 @@ def main():
     file_name = sys.argv[1]
     problem = PDMAProblem()
     problem.load(file_name)
-    problem.initial.getStatus()
-    problem.solution = search.breadth_first_tree_search(problem)
+    #problem.initial.getStatus()
+    problem.solution = search.uniform_cost_search(problem, True)
     
     #x = problem.getPatientDict()
     #ac = problem.actions(x)

@@ -2,6 +2,7 @@
 from search import Problem, depth_first_tree_search, depth_first_graph_search, bidirectional_search, breadth_first_tree_search, Node
 import sys
 from itertools import permutations
+from collections import defaultdict
 from copy import deepcopy, copy
 
 
@@ -63,13 +64,23 @@ class Label():
         return self.consultationTime
 
 class State():
-    def __init__(self, patientDict=None, consultations=None):
+    def __init__(self, patientDict=None, consultations=None, mediclistkeys = None, c=None):
         self.patientDict = {}
-        self.consultations = {}
+        self.consultations = defaultdict(list)
+        self.deadend = 0
         if patientDict is not None:
             self.patientDict = deepcopy(patientDict)        
         if consultations is not None:
             self.consultations = deepcopy(consultations)
+        # if mediclistkeys is not None:
+        #     self.consultations = dict.fromkeys(mediclistkeys, [])
+        if c is None:
+            self.cost = 0
+        else:
+            self.cost = c
+
+    def __lt__(self, other):
+        return self.cost < other.cost
 
     def getPatientDict(self):
         return self.patientDict
@@ -82,6 +93,8 @@ class State():
             print("Code " + str(self.patientDict[x].getCode()))
             print("Time Waiting " + str(self.patientDict[x].getTimePassed()))
             print("Time Consultation " + str(self.patientDict[x].getTimePassedConsult()))
+            print("Consultations: " + str(self.consultations))
+            print("Cost: " + str(self.cost))
             print("\n")
 
     def setNewConsultation(self, medic_code, patient_code):
@@ -89,6 +102,13 @@ class State():
 
     def setPatientDict(self, patientDict):
         self.patientDict = patientDict
+    
+    def updateCost(self, patient):
+        self.cost += self.getPatientDict()[str(patient)].getTimePassed()**2
+
+    # def computeCost(self):
+    #     for i in self.patientDict.keys():
+    #         self.cost += self.patientDict[i].timePassed**2
 
 
 
@@ -110,36 +130,36 @@ class PDMAProblem(Problem):
     def getPatientDict(self):
         return self.patientDict
 
-
-    def getStatus(self):
-        patientDict = self.getPatientDict()
-        for x in patientDict.keys():
-            print("Code " + str(patientDict[x].getCode()))
-            print("Time Waiting " + str(patientDict[x].getTimePassed()))
-            print("Time Consultation " + str(patientDict[x].getTimePassedConsult()))
-            print("\n")
+    # def getStatus(self):
+    #     patientDict = self.getPatientDict()
+    #     for x in patientDict.keys():
+    #         print("Code " + str(patientDict[x].getCode()))
+    #         print("Time Waiting " + str(patientDict[x].getTimePassed()))
+    #         print("Time Consultation " + str(patientDict[x].getTimePassedConsult()))
+    #         print("\n")
 
 
     #returns a list with the actions that can be applied to state s
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
-        permuts = permutations(list(s.getPatientDict().keys()), len(list(self.medicDict.keys())))
-
-        for i in permuts:
-            actions.append(list(zip(list(self.medicDict.keys()),i)))
-
-        return actions
-        
+        if not s.deadend:
+            permuts = permutations(list(s.getPatientDict().keys()), len(list(self.medicDict.keys())))
+            actapp = actions.append
+            for i in permuts:
+                actapp(list(zip(list(self.medicDict.keys()),i)))
+            print(actions)
+            return actions
+        else:
+            return []
 
     #returns the obtained state after applying the action a to state s
     def result(self,s,a):
 
         #Create a new state, by copying state s
         new_s = deepcopy(s)
-
+        new_s.cost = 0
         #List with the pacients who are currently in a consultation
         patients_attended = []
-
         #Considering 1 action as 3 singleActions
         for singleAction in a:
 
@@ -148,57 +168,62 @@ class PDMAProblem(Problem):
             new_s.getPatientDict()[str(singleAction[1])].incPassedTime(float(medic_rate),1)
 
             #Remove the patient from the patient's dictionary if he has reached the total Consultation Time
-            if new_s.getPatientDict[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.getPatientDict()[str(singleAction[1])].getLabel()].getConsultationTime() :
+            if new_s.getPatientDict()[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.getPatientDict()[str(singleAction[1])].getLabel()].getConsultationTime() :
+                #new_s.cost += new_s.getPatientDict()[str(singleAction[1])].getTimePassed() **2
+                new_s.updateCost(str(singleAction[1]))
                 del new_s.getPatientDict()[str(singleAction[1])]
 
+
             #Add the new consultation to the new_s consultations dictionary
-            new_s.setNewConsultation(str(singleAction[0], str(singleAction[1])))
+            #new_s.setNewConsultation(singleAction[0], singleAction[1])
+            new_s.consultations[str(singleAction[0])].append(str(singleAction[1]))
 
             #Store patients who are in a consultation 
-            patients_attended.append(str(singleAction[1]))
-          
+            patients_attended.append(singleAction[1])
+         
         #Increase the waiting time in every patient who is not in a consultation at this moment in new_s
         for x in new_s.getPatientDict().keys():
             if x not in patients_attended:
-                new_s[str(x)].incPassedTime()
+                new_s.getPatientDict()[str(x)].incPassedTime()
 
             #Check if any patient has exceeded the Maximum Waiting Time 
-            if new_s[str(x)].getTimePassed() > self.getLabelDict()[new_s[str(singleAction[1])].getLabel()].getMaxWaitingTime():
-                    return
+            if new_s.getPatientDict()[str(x)].getTimePassed() > self.getLabelDict()[new_s.getPatientDict()[str(x)].getLabel()].getMaxWaitingTime():
+                    new_s.deadend = 1
+            #new_s.cost += new_s.getPatientDict()[x].getTimePassed() ** 2
+            new_s.updateCost(x)
+        
+        #print("After action\n")
+        new_s.getStatus()
         return new_s
 
     #receives a state and checks if it is a goal state 
     def goal_test(self,s):
-
-        #             Estou a asssumir que se o estado for inválido, nunca chegamos a ir para esse estado. 
-        #             o método result(), dá logo return, quando o estado é inválido  
+        # aqui nao assumes nada ô rapazinho
         #___________________________________________________________________________________________________________#
-        #for x in status.keys():
-        #    max_wait_time = self.labelDict[status[x].getLabel()].getMaxWaitingTime()
-        #    consul_target_time = self.labelDict[status[x].getLabel()].getConsultationTime()
-        #    if status[x].getTimePassed() > max_wait_time or status[x].getTimePassedConsult() < consul_target_time:
-        #        return False
-        #return True
+        for x in s.patientDict.keys():
+           consul_target_time = self.labelDict[s.patientDict[x].labelCode].consultationTime
+           if  s.patientDict[x].timePassedConsult < consul_target_time:
+               return False
+        return True
         #___________________________________________________________________________________________________________#
-    
 
-        #returns True if the dictionary is empty, False if it is not
-        return not bool(s.getPatientDict())
 
 
     #receives 2 states and the cost of the 1st one; returns the cost of the 2nd 
     #só é necessário caluclar o custo de a e somar a c
     def path_cost(self,c,s1,a,s2):
 
-        action_cost = 0
+        # action_cost = 0
 
-        for singleAction in a:
-            #Check if the patient is in state 2's dictionary; If he is, no cost is added (max consultation time not reached)
-            if str(singleAction[1]) not in s2.getPatientDict():
-                #Check in state 1's patient dictionary how much time the paitient waited and compute the cost 
-                action_cost += s1.getPatientDict()[str(singleAction[1])].getTimePassed()**2
+        # for singleAction in a:
+        #     #Check if the patient is in state 2's dictionary; If he is, no cost is added (max consultation time not reached)
+        #     if str(singleAction[1]) not in s2.getPatientDict():
+        #         #Check in state 1's patient dictionary how much time the paitient waited and compute the cost 
+        #         action_cost += s1.getPatientDict()[str(singleAction[1])].getTimePassed()**2
+        # return (c + a actio_cost)
+        return  s2.cost - s1.cost
 
-        return (c + action_cost)
+
 
         #c1 = 0 
         #c2 = 0
@@ -212,6 +237,7 @@ class PDMAProblem(Problem):
 
 
     def load(self,f):
+        initialCost = 0
         if(".txt" in f):
                 prob_file = open(f,"r")
                 line_info = prob_file.readlines()
@@ -227,10 +253,13 @@ class PDMAProblem(Problem):
                         temp = line.split()
                         temp.append(0)
                         self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
+                        initialCost+= int(temp[2]) ** 2
         else:
             sys.exit("Wrong file format, exiting...\n")
 
-        self.initial.setPatientDict(self.patientDict)
+        self.initial = State(self.patientDict,None,self.medicDict.keys(), initialCost)
+        self.initial.getStatus()
+        #self.initial.setPatientDict(self.patientDict)
         
     def save(self, f):
 

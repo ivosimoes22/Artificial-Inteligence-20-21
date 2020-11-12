@@ -123,6 +123,7 @@ class PDMAProblem(search.Problem):
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
         urgent_patients = []
+        same_gang = []
         actapp = actions.append
         urgapp = urgent_patients.append
         invalid = 0
@@ -131,10 +132,48 @@ class PDMAProblem(search.Problem):
                 urgapp(patient)
         if len(urgent_patients) > len(list(self.medicDict.keys())):
             return actions
+#->> THIS SHIT DOOMED, BRAIN HURTS        
+        # #Check for redundant pairs
+        # for x in combinations(list(s.remainingPatients.keys()),2):
+        #     if s.remainingPatient[x[0]].labelCode == s.remainingPatient[x[1]].labelCode:
+        #         if s.remainingPatient[x[0]].timePassed == s.remainingPatient[x[1]].timePassed:
+        #             same_gang.append(list(x)) #-> list of redundant pairs (not sure if working properly)
+
+#psuedo code for same gang
+# if x1,...,xn are same state(label and waited time same)
+# check actions with x1,...,xn for their position and erase all actions that are redundant
+# example: if x1,x2 same gang
+# detect actions with x1,x2, ex: [003,x1,004,x2]
+# erase all actions that change x1 and x2 between themselves, as they are redundant
+# how? idk lol   
+
+        
+# [[002,006],[001,003]]
+
+# [002,006,x],[002,x,006],[x,002,006]
+
+# [002,004,005,006,001]->[006,004,005,002,001]
+
+# [002,003,006]
+       
+       
+       
+        # for x in s.remainingPatients.keys():
+        #     for notx in s.remainingPatients.keys():
+        #         if x is not notx:
+        #             if s.remain
+
+
         # print("ugernt guys\n")
         # print(urgent_patients)    
-    
-        permuts = permutations(list(s.remainingPatients.keys()), len(list(self.medicDict.keys())))       
+        new_patient_list = list(s.remainingPatients.keys())
+        new_p_app = new_patient_list.append
+        if len(list(s.remainingPatients.keys())) <  len(list(self.medicDict.keys())):
+            diff = len(list(self.medicDict.keys())) - len(list(s.remainingPatients.keys())) 
+            for _ in range(diff):
+                new_p_app("empty")
+                
+        permuts = permutations(new_patient_list, len(list(self.medicDict.keys())))       
         actapp = actions.append
         for i in permuts:
             invalid = 0
@@ -145,11 +184,12 @@ class PDMAProblem(search.Problem):
                     #print("bruh moment")
                     break
 
-            if not invalid : 
+            if not invalid: 
                 #print("CRL")
-                actapp(list(zip(list(self.medicDict.keys()),i))) 
-        # print("Actions\n")
-        # print(actions)
+                   actapp(list(zip(list(self.medicDict.keys()),i))) 
+        #print("Actions\n")
+        
+        #print(actions)
         return actions
 
     #returns the obtained state after applying the action a to state s
@@ -162,20 +202,19 @@ class PDMAProblem(search.Problem):
         patients_attended = []
         #Considering 1 action as number of medics singleActions
         for singleAction in a:
+            if singleAction[1] is not "empty":
+                #Increase patient's passed  time in a consultation
+                medic_rate = self.medicDict[singleAction[0]].getRate()
+                new_s.patientDict[str(singleAction[1])].incPassedTime(float(medic_rate),1)
 
-            #Increase patient's passed  time in a consultation
-            medic_rate = self.medicDict[singleAction[0]].getRate()
-            new_s.patientDict[str(singleAction[1])].incPassedTime(float(medic_rate),1)
+                #Remove the patient from the patient's dictionary if he has reached the total Consultation Time
+                if new_s.patientDict[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.patientDict[str(singleAction[1])].getLabel()].getConsultationTime():
+                    del new_s.remainingPatients[str(singleAction[1])]
 
-            #Remove the patient from the patient's dictionary if he has reached the total Consultation Time
-            if new_s.patientDict[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.patientDict[str(singleAction[1])].getLabel()].getConsultationTime():
-                del new_s.remainingPatients[str(singleAction[1])]
-
+                #Store patients who are in a consultation 
+                patients_attended.append(singleAction[1])
             #Add the new consultation to the new_s consultations dictionary
             new_s.consultations[str(singleAction[0])].append(str(singleAction[1]))
-
-            #Store patients who are in a consultation 
-            patients_attended.append(singleAction[1])
          
         #Increase the waiting time in every patient who is not in a consultation at this moment in new_s
         for x in new_s.remainingPatients.keys():
@@ -204,27 +243,11 @@ class PDMAProblem(search.Problem):
         for key in s2.patientDict.keys():
             state2_cost += s2.patientDict[key].getTimePassed()**2    
 
-
-        
         s2.cost = state2_cost
-        #s2.getStatus()
-        #print("\nDiff:" + str(state2_cost - c) + "\n")
+        s2.getStatus()
+        print("\nDiff:" + str(state2_cost - c) + "\n")
         return (state2_cost - c)
 
-
-
-        #action_cost = 0
-
-        #for singleAction in a:
-            #Check if the patient is in state 2's dictionary; If he is, no cost is added (max consultation time not reached)
-        #    if str(singleAction[1]) not in s2.getPatientDict():
-        #       #Check in state 1's patient dictionary how much time the paitient waited and compute the cost 
-        #      action_cost += s1.getPatientDict()[str(singleAction[1])].getTimePassed()**2
-        
-        #s2.updateCost(action_cost) 
-        #s2.cost += action_cost
-        #s2.getStatus()
-        #return (c + action_cost)
 
 
 
@@ -252,25 +275,31 @@ class PDMAProblem(search.Problem):
             initialCost += self.patientDict[key].getTimePassed()**2
 
         self.initial = State(self.patientDict,self.patientDict, None, self.medicDict.keys(), initialCost)
-        # print("Initial Cost\n")
-        # self.initial.getStatus()
-        #print("________________________________________")
 
         
     def save(self, f):
 
         consultations = self.solution.state.consultations
-        for key in consultations:
+        for key, medicConsultations in consultations.items():
             f.write("MD " + key + " ")
-            f.write(p + " ")
+            for singleConsultation in medicConsultations:
+                f.write(singleConsultation + " ")
             f.write("\n")
         f.close()
 
     def search(self, p):
-        self.solution = search.uniform_cost_search(p)
+        self.solution = search.astar_search(p, p.heuristic)
+        #self.solution = search.uniform_cost_search(p)
         if self.solution  is not None:
             print("Found Solution")
             return True
         else: 
             print("Infeas")
             return False
+
+    def heuristic(self, n):
+        attenuation = 0.0
+        bias =  1 - (len(n.state.remainingPatients.keys())/len(n.state.patientDict.keys()))
+        weight = n.state.cost*bias
+        return -weight
+        

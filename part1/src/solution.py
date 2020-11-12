@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import search
 import sys
+import time
 from itertools import permutations
 from collections import defaultdict
 from copy import deepcopy, copy
@@ -121,10 +122,34 @@ class PDMAProblem(search.Problem):
     #returns a list with the actions that can be applied to state s
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
-        permuts = permutations(list(s.remainingPatients.keys()), len(list(self.medicDict.keys())))
+        urgent_patients = []
+        actapp = actions.append
+        urgapp = urgent_patients.append
+        invalid = 0
+        for patient in s.remainingPatients.keys():
+            if(s.patientDict[patient].timePassed >= self.labelDict[s.patientDict[patient].labelCode].maxWaitingTime):
+                urgapp(patient)
+        if len(urgent_patients) > len(list(self.medicDict.keys())):
+            return actions
+        # print("ugernt guys\n")
+        # print(urgent_patients)    
+    
+        permuts = permutations(list(s.remainingPatients.keys()), len(list(self.medicDict.keys())))       
         actapp = actions.append
         for i in permuts:
-            actapp(list(zip(list(self.medicDict.keys()),i)))
+            invalid = 0
+            #print(i)
+            for urg in urgent_patients:
+                if urg not in i:
+                    invalid = 1
+                    #print("bruh moment")
+                    break
+
+            if not invalid : 
+                #print("CRL")
+                actapp(list(zip(list(self.medicDict.keys()),i))) 
+        # print("Actions\n")
+        # print(actions)
         return actions
 
     #returns the obtained state after applying the action a to state s
@@ -153,16 +178,16 @@ class PDMAProblem(search.Problem):
             patients_attended.append(singleAction[1])
          
         #Increase the waiting time in every patient who is not in a consultation at this moment in new_s
-        for x in new_s.patientDict.keys():
+        for x in new_s.remainingPatients.keys():
             if x not in patients_attended:
                 new_s.patientDict[str(x)].incPassedTime()
 
             ##Actions não deve deixar isto acontecer!
-            #Check if any patient has exceeded the Maximum Waiting Time 
-            #if new_s.getPatientDict()[str(x)].getTimePassed() > self.getLabelDict()[new_s.getPatientDict()[str(x)].getLabel()].getMaxWaitingTime():
+            # Check if any patient has exceeded the Maximum Waiting Time 
+            # if new_s.getPatientDict()[str(x)].getTimePassed() > self.getLabelDict()[new_s.getPatientDict()[str(x)].getLabel()].getMaxWaitingTime():
             #        new_s.deadend = 1
         
-        #new_s.getStatus()
+        
         return new_s
 
     #receives a state and checks if it is a goal state 
@@ -179,7 +204,11 @@ class PDMAProblem(search.Problem):
         for key in s2.patientDict.keys():
             state2_cost += s2.patientDict[key].getTimePassed()**2    
 
+
+        
         s2.cost = state2_cost
+        #s2.getStatus()
+        #print("\nDiff:" + str(state2_cost - c) + "\n")
         return (state2_cost - c)
 
 
@@ -223,50 +252,25 @@ class PDMAProblem(search.Problem):
             initialCost += self.patientDict[key].getTimePassed()**2
 
         self.initial = State(self.patientDict,self.patientDict, None, self.medicDict.keys(), initialCost)
+        # print("Initial Cost\n")
+        # self.initial.getStatus()
+        #print("________________________________________")
+
         
     def save(self, f):
 
-        consultations = self.solution.state.getConsultations()
-        for key, medic in consultations:
-            print("MD " + key + " ")
+        consultations = self.solution.state.consultations
+        for key in consultations:
             f.write("MD " + key + " ")
-            for p in consultations[key]:
-                print(p + " ")
-                f.write(p + " ")
-            print("\n")
+            f.write(p + " ")
             f.write("\n")
         f.close()
 
-        if consultations == None:
-            f.write("Infeasible")
-
     def search(self, p):
-        if search.breadth_first_tree_search(p) == True:
+        self.solution = search.uniform_cost_search(p)
+        if self.solution  is not None:
             print("Found Solution")
-
-    
-def main():  
-    #file_name = sys.argv[1]
-    file_name = "problem.txt"
-    
-    problem = PDMAProblem()
-    problem.load(file_name)
-    #problem.initial.getStatus()
-    problem.solution = search.uniform_cost_search(problem, True)
-    
-    #x = problem.getPatientDict()
-    #ac = problem.actions(x)
-    #s1 = problem.result(x, ac[0])
-    #problem.getStatus(s1)
-    #s1t = copy.deepcopy(s1)
-    ##print("\n")
-    #2 = problem.result(s1t, ac[0])
-    #problem.getStatus(s1)
-    #problem.getStatus(s2)
-    #print(problem.path_cost(0,s1,0,s2))
-    f = open("solution.txt", "a")
-    problem.save(f)
-
-
-if __name__ == "__main__":
-    main()
+            return True
+        else: 
+            print("Infeas")
+            return False

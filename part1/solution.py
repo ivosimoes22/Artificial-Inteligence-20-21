@@ -1,29 +1,22 @@
 # -*- coding: utf-8 -*-
-from search import Problem, depth_first_tree_search, depth_first_graph_search, bidirectional_search, breadth_first_tree_search, Node
+import search
 import sys
 from itertools import permutations
 from collections import defaultdict
 from copy import deepcopy, copy
 
 
+
 class Doctor():
     def __init__(self, code, efficiencyRate):
         self.code = code
         self.rate = efficiencyRate
-        self.patientList = []
 
     #getters
     def getCode(self):
         return self.code
     def getRate(self):
         return self.rate
-    def getPatientList(self):
-        return self.patientList
-
-    #setter
-    def setNewPatient(self, patientCode):
-        self.patientList.append(patientCode)
-
 
 class Patient():
     def __init__(self, code, timePassed, labelCode):
@@ -64,14 +57,16 @@ class Label():
         return self.consultationTime
 
 class State():
-    def __init__(self, patientDict=None, consultations=None, mediclistkeys = None, c=0):
+    def __init__(self, patientDict=None, remainingPatients=None, consultations=None, mediclistkeys = None, c=0):
         self.patientDict = {}
+        self.remainingPatients = {}
         self.consultations = defaultdict(list)
-        self.deadend = 0
         if patientDict is not None:
             self.patientDict = deepcopy(patientDict)        
         if consultations is not None:
             self.consultations = deepcopy(consultations)
+        if remainingPatients is not None:
+            self.remainingPatients = deepcopy(remainingPatients)
         # if mediclistkeys is not None:
         #     self.consultations = dict.fromkeys(mediclistkeys, [])
         self.cost = c
@@ -94,9 +89,6 @@ class State():
             print("Cost: " + str(self.cost))
             print("\n")
 
-    def setNewConsultation(self, medic_code, patient_code):
-        self.consultations[str(medic_code)].append(str(patient_code))
-
     def setPatientDict(self, patientDict):
         self.patientDict = patientDict
     
@@ -108,7 +100,7 @@ class State():
 
 
 
-class PDMAProblem(Problem):
+class PDMAProblem(search.Problem):
     
     #Constructor
     def __init__(self):
@@ -116,7 +108,7 @@ class PDMAProblem(Problem):
         self.labelDict = {}
         self.patientDict = {}
         self.initial = State()
-        self.solution = Node(self.initial)
+        self.solution = 0
     
     #Getters
     def getMedicDict(self):
@@ -126,108 +118,85 @@ class PDMAProblem(Problem):
     def getPatientDict(self):
         return self.patientDict
 
-    # def getStatus(self):
-    #     patientDict = self.getPatientDict()
-    #     for x in patientDict.keys():
-    #         print("Code " + str(patientDict[x].getCode()))
-    #         print("Time Waiting " + str(patientDict[x].getTimePassed()))
-    #         print("Time Consultation " + str(patientDict[x].getTimePassedConsult()))
-    #         print("\n")
-
-
     #returns a list with the actions that can be applied to state s
     def actions(self,s):
         actions = [] #[destination_doctor,patient]
-        if not s.deadend:
-            permuts = permutations(list(s.getPatientDict().keys()), len(list(self.medicDict.keys())))
-            actapp = actions.append
-            for i in permuts:
-                actapp(list(zip(list(self.medicDict.keys()),i)))
-            print(actions)
-            return actions
-        else:
-            return []
+        permuts = permutations(list(s.remainingPatients.keys()), len(list(self.medicDict.keys())))
+        actapp = actions.append
+        for i in permuts:
+            actapp(list(zip(list(self.medicDict.keys()),i)))
+        return actions
 
     #returns the obtained state after applying the action a to state s
     def result(self,s,a):
 
         #Create a new state, by copying state s
         new_s = deepcopy(s)
-        new_s.cost = 0
+
         #List with the pacients who are currently in a consultation
         patients_attended = []
-        #Considering 1 action as 3 singleActions
+        #Considering 1 action as number of medics singleActions
         for singleAction in a:
 
             #Increase patient's passed  time in a consultation
             medic_rate = self.medicDict[singleAction[0]].getRate()
-            new_s.getPatientDict()[str(singleAction[1])].incPassedTime(float(medic_rate),1)
+            new_s.patientDict[str(singleAction[1])].incPassedTime(float(medic_rate),1)
 
             #Remove the patient from the patient's dictionary if he has reached the total Consultation Time
-            if new_s.getPatientDict()[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.getPatientDict()[str(singleAction[1])].getLabel()].getConsultationTime() :
-                del new_s.getPatientDict()[str(singleAction[1])]
-
+            if new_s.patientDict[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.patientDict[str(singleAction[1])].getLabel()].getConsultationTime():
+                del new_s.remainingPatients[str(singleAction[1])]
 
             #Add the new consultation to the new_s consultations dictionary
-            #new_s.setNewConsultation(singleAction[0], singleAction[1])
             new_s.consultations[str(singleAction[0])].append(str(singleAction[1]))
 
             #Store patients who are in a consultation 
             patients_attended.append(singleAction[1])
          
         #Increase the waiting time in every patient who is not in a consultation at this moment in new_s
-        for x in new_s.getPatientDict().keys():
+        for x in new_s.patientDict.keys():
             if x not in patients_attended:
-                new_s.getPatientDict()[str(x)].incPassedTime()
+                new_s.patientDict[str(x)].incPassedTime()
 
+            ##Actions não deve deixar isto acontecer!
             #Check if any patient has exceeded the Maximum Waiting Time 
-            if new_s.getPatientDict()[str(x)].getTimePassed() > self.getLabelDict()[new_s.getPatientDict()[str(x)].getLabel()].getMaxWaitingTime():
-                    new_s.deadend = 1
+            #if new_s.getPatientDict()[str(x)].getTimePassed() > self.getLabelDict()[new_s.getPatientDict()[str(x)].getLabel()].getMaxWaitingTime():
+            #        new_s.deadend = 1
         
-        #print("After action\n")
-        new_s.getStatus()
+        #new_s.getStatus()
         return new_s
 
     #receives a state and checks if it is a goal state 
     def goal_test(self,s):
-        # aqui nao assumes nada ô rapazinho
-        #___________________________________________________________________________________________________________#
-        # for x in s.patientDict.keys():
-        #    consul_target_time = self.labelDict[s.patientDict[x].labelCode].consultationTime
-        #    if  s.patientDict[x].timePassedConsult < consul_target_time:
-        #        return False
-        return not bool(s.patientDict)
-        #___________________________________________________________________________________________________________#
+        return not bool(s.remainingPatients)
 
 
 
     #receives 2 states and the cost of the 1st one; returns the cost of the 2nd 
-    #só é necessário caluclar o custo de a e somar a c
     def path_cost(self,c,s1,a,s2):
 
-        action_cost = 0
+        state2_cost = 0
 
-        for singleAction in a:
+        for key in s2.patientDict.keys():
+            state2_cost += s2.patientDict[key].getTimePassed()**2    
+
+        s2.cost = state2_cost
+        return (state2_cost - c)
+
+
+
+        #action_cost = 0
+
+        #for singleAction in a:
             #Check if the patient is in state 2's dictionary; If he is, no cost is added (max consultation time not reached)
-            if str(singleAction[1]) not in s2.getPatientDict():
-                #Check in state 1's patient dictionary how much time the paitient waited and compute the cost 
-                action_cost += s1.getPatientDict()[str(singleAction[1])].getTimePassed()**2
+        #    if str(singleAction[1]) not in s2.getPatientDict():
+        #       #Check in state 1's patient dictionary how much time the paitient waited and compute the cost 
+        #      action_cost += s1.getPatientDict()[str(singleAction[1])].getTimePassed()**2
         
         #s2.updateCost(action_cost) 
-        s2.cost += action_cost
-        s2.getStatus()
-        return (c + action_cost)
+        #s2.cost += action_cost
+        #s2.getStatus()
+        #return (c + action_cost)
 
-
-        #c1 = 0 
-        #c2 = 0
-        #for x in status1.keys():
-        #    c1 += status1[x].getTimePassed()**2
-        #    #print(status1[x].getTimePassed())
-        #for x in status2.keys():
-        #    c2 += (status2[x].getTimePassed()**2)
-        #print("c1 " + str(c1) + " c2 " + str(c2))
-        #return (c2 - c1)
 
 
     def load(self,f):
@@ -250,8 +219,10 @@ class PDMAProblem(Problem):
         else:
             sys.exit("Wrong file format, exiting...\n")
 
-        self.initial = State(self.patientDict,None,self.medicDict.keys(), initialCost)
-        self.initial.getStatus()
+        for key in self.patientDict:
+            initialCost += self.patientDict[key].getTimePassed()**2
+
+        self.initial = State(self.patientDict,self.patientDict, None, self.medicDict.keys(), initialCost)
         
     def save(self, f):
 
@@ -270,7 +241,32 @@ class PDMAProblem(Problem):
             f.write("Infeasible")
 
     def search(self, p):
-        if breadth_first_tree_search(p) == True:
+        if search.breadth_first_tree_search(p) == True:
             print("Found Solution")
 
     
+def main():  
+    #file_name = sys.argv[1]
+    file_name = "problem.txt"
+    
+    problem = PDMAProblem()
+    problem.load(file_name)
+    #problem.initial.getStatus()
+    problem.solution = search.uniform_cost_search(problem, True)
+    
+    #x = problem.getPatientDict()
+    #ac = problem.actions(x)
+    #s1 = problem.result(x, ac[0])
+    #problem.getStatus(s1)
+    #s1t = copy.deepcopy(s1)
+    ##print("\n")
+    #2 = problem.result(s1t, ac[0])
+    #problem.getStatus(s1)
+    #problem.getStatus(s2)
+    #print(problem.path_cost(0,s1,0,s2))
+    f = open("solution.txt", "a")
+    problem.save(f)
+
+
+if __name__ == "__main__":
+    main()

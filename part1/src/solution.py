@@ -3,6 +3,7 @@ import search
 import sys
 import time
 from itertools import permutations
+from itertools import combinations
 from collections import defaultdict
 from copy import deepcopy, copy
 
@@ -126,38 +127,25 @@ class PDMAProblem(search.Problem):
         same_gang = []
         actapp = actions.append
         urgapp = urgent_patients.append
+
         invalid = 0
         for patient in s.remainingPatients.keys():
             if(s.patientDict[patient].timePassed >= self.labelDict[s.patientDict[patient].labelCode].maxWaitingTime):
                 urgapp(patient)
         if len(urgent_patients) > len(list(self.medicDict.keys())):
             return actions
-#->> THIS SHIT DOOMED, BRAIN HURTS        
+       
         # #Check for redundant pairs
-        # for x in combinations(list(s.remainingPatients.keys()),2):
-        #     if s.remainingPatient[x[0]].labelCode == s.remainingPatient[x[1]].labelCode:
-        #         if s.remainingPatient[x[0]].timePassed == s.remainingPatient[x[1]].timePassed:
-        #             same_gang.append(list(x)) #-> list of redundant pairs (not sure if working properly)
-
-#psuedo code for same gang
-# if x1,...,xn are same state(label and waited time same)
-# check actions with x1,...,xn for their position and erase all actions that are redundant
-# example: if x1,x2 same gang
-# detect actions with x1,x2, ex: [003,x1,004,x2]
-# erase all actions that change x1 and x2 between themselves, as they are redundant
-# how? idk lol   
-
-        
-# [[002,006],[001,003]]
-
-# [002,006,x],[002,x,006],[x,002,006]
-
-# [002,004,005,006,001]->[006,004,005,002,001]
-
-# [002,003,006]
-       
-       
-       
+        for x in combinations(list(s.remainingPatients.keys()),2):
+            if s.remainingPatients[x[0]].labelCode == s.remainingPatients[x[1]].labelCode:
+                if s.patientDict[x[0]].timePassed == s.patientDict[x[1]].timePassed:
+                    if s.patientDict[x[0]].timePassedConsult == s.patientDict[x[1]].timePassedConsult: #maybe they need to have same total time in consultation, cause of goal state i guess
+                    #maybe try with this:
+                    #if (s.labelDict[patientDict[x[0]].labelCode].consultationTime - s.patientDict[x[0]].timePassedConsult) == (s.labelDict[patientDict[x[1]].labelCode].consultationTime) - s.patientDict[x[1]].timePassedConsult:
+                    #CAN WE CONSIDER 2 PATIENTS WITH SAME TIME REMAINING IN CONSULTATION AND SAME TIME WAITING AS REDUNDANT????? THEORY CRAFT ON THIS
+                        same_gang.append(list(x)) #-> list of redundant patients (not sure if working properly)
+        #print("Redundant Lads")              
+        #print(same_gang)
         # for x in s.remainingPatients.keys():
         #     for notx in s.remainingPatients.keys():
         #         if x is not notx:
@@ -182,7 +170,26 @@ class PDMAProblem(search.Problem):
                 if urg not in i:
                     invalid = 1
                     #print("bruh moment")
-                    break
+                    break         
+            #[x,x,x,x,2,x]->[x,x,x,3,x]       
+            for redun in same_gang: #ex.[2,3]
+                try: 
+                    index0 = i.index(redun[0]) 
+                except ValueError:
+                    try: 
+                        index0 = i.index(redun[1]) 
+                        invalid = 1
+                        break
+                    except ValueError:
+                        continue
+                try: 
+                    index1 = i.index(redun[1])
+                    if(index0 > index1):
+                        invalid = 1
+                        break
+                except ValueError:
+                    continue
+
 
             if not invalid: 
                 #print("CRL")
@@ -288,7 +295,7 @@ class PDMAProblem(search.Problem):
         f.close()
 
     def search(self, p):
-        self.solution = search.astar_search(p, p.heuristic)
+        self.solution = search.astar_search(p, p.heuristic,True)
         #self.solution = search.uniform_cost_search(p)
         if self.solution  is not None:
             print("Found Solution")

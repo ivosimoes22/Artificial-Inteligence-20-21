@@ -287,9 +287,9 @@ class PDMAProblem(search.Problem):
             f.write("\n")
         #f.close()
 
-    def search(self, p):
-        #self.solution = search.astar_search(p, p.heuristic,True)
-        self.solution = search.uniform_cost_search(p)
+    def search(self):
+        self.solution = search.astar_search(self, self.heuristic)
+        #self.solution = search.uniform_cost_search(p)
         if self.solution  is not None:
             #print("Found Solution")
             return True

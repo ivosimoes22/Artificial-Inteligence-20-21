@@ -7,8 +7,6 @@ from itertools import combinations
 from collections import defaultdict
 from copy import deepcopy, copy
 
-
-
 class Doctor():
     def __init__(self, code, efficiencyRate):
         self.code = code
@@ -253,8 +251,6 @@ class PDMAProblem(search.Problem):
 
     def load(self,f):
         initialCost = 0
-        #if(".txt" in f):
-        #    f = open(f,"r")
         line_info = f.readlines()
         for line in line_info:
             if ("MD" in line):
@@ -268,8 +264,6 @@ class PDMAProblem(search.Problem):
                 temp = line.split()
                 temp.append(0)
                 self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
-        # else:
-        #     sys.exit("Wrong file format, exiting...\n")
 
         for key in self.patientDict:
             initialCost += self.patientDict[key].getTimePassed()**2
@@ -278,23 +272,19 @@ class PDMAProblem(search.Problem):
 
         
     def save(self, f):
-
         consultations = self.solution.state.consultations
         for key, medicConsultations in consultations.items():
             f.write("MD " + key + " ")
             for singleConsultation in medicConsultations:
                 f.write(singleConsultation + " ")
             f.write("\n")
-        #f.close()
 
     def search(self):
         self.solution = search.astar_search(self, self.heuristic)
         #self.solution = search.uniform_cost_search(p)
         if self.solution  is not None:
-            #print("Found Solution")
             return True
-        else: 
-            #print("Infeas")
+        else:
             return False
 
     def heuristic(self, n):

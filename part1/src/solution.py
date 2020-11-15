@@ -2,8 +2,7 @@
 import search
 import sys
 import time
-from itertools import permutations
-from itertools import combinations
+from itertools import permutations, combinations
 from collections import defaultdict
 from copy import deepcopy, copy
 
@@ -91,13 +90,6 @@ class State():
 
     def setPatientDict(self, patientDict):
         self.patientDict = patientDict
-    
-    def updateCost(self, patient):
-        self.cost += patient
-    # def computeCost(self):
-    #     for i in self.patientDict.keys():
-    #         self.cost += self.patientDict[i].timePassed**2
-
 
 
 class PDMAProblem(search.Problem):
@@ -188,12 +180,12 @@ class PDMAProblem(search.Problem):
                 except ValueError:
                     continue
 
-
             if not invalid: 
                 #print("CRL")
                    actapp(list(zip(list(self.medicDict.keys()),i))) 
         #print("Actions\n")
         return actions
+
 
     #returns the obtained state after applying the action a to state s
     def result(self,s,a):
@@ -223,14 +215,13 @@ class PDMAProblem(search.Problem):
         for x in new_s.remainingPatients.keys():
             if x not in patients_attended:
                 new_s.patientDict[str(x)].incPassedTime()
-        
-        
+          
         return new_s
+
 
     #receives a state and checks if it is a goal state 
     def goal_test(self,s):
         return not bool(s.remainingPatients)
-
 
 
     #receives 2 states and the cost of the 1st one; returns the cost of the 2nd 
@@ -245,8 +236,6 @@ class PDMAProblem(search.Problem):
         #s2.getStatus()
         #print("\nDiff:" + str(state2_cost - c) + "\n")
         return (state2_cost - c)
-
-
 
 
     def load(self,f):
@@ -279,6 +268,7 @@ class PDMAProblem(search.Problem):
                 f.write(singleConsultation + " ")
             f.write("\n")
 
+
     def search(self):
         self.solution = search.astar_search(self, self.heuristic)
         #self.solution = search.uniform_cost_search(p)
@@ -286,6 +276,7 @@ class PDMAProblem(search.Problem):
             return True
         else:
             return False
+
 
     def heuristic(self, n):
         ns = deepcopy(n.state)

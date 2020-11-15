@@ -251,8 +251,8 @@ class PDMAProblem(search.Problem):
             state2_cost += s2.patientDict[key].getTimePassed()**2    
 
         s2.cost = state2_cost
-        s2.getStatus()
-        print("\nDiff:" + str(state2_cost - c) + "\n")
+        #s2.getStatus()
+        #print("\nDiff:" + str(state2_cost - c) + "\n")
         return (state2_cost - c)
 
 
@@ -295,8 +295,8 @@ class PDMAProblem(search.Problem):
         f.close()
 
     def search(self, p):
-        self.solution = search.astar_search(p, p.heuristic,True)
-        #self.solution = search.uniform_cost_search(p)
+        #self.solution = search.astar_search(p, p.heuristic,True)
+        self.solution = search.uniform_cost_search(p)
         if self.solution  is not None:
             print("Found Solution")
             return True

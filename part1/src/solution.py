@@ -195,8 +195,6 @@ class PDMAProblem(search.Problem):
                 #print("CRL")
                    actapp(list(zip(list(self.medicDict.keys()),i))) 
         #print("Actions\n")
-        
-        #print(actions)
         return actions
 
     #returns the obtained state after applying the action a to state s
@@ -209,7 +207,7 @@ class PDMAProblem(search.Problem):
         patients_attended = []
         #Considering 1 action as number of medics singleActions
         for singleAction in a:
-            if singleAction[1] is not "empty":
+            if singleAction[1] != "empty":
                 #Increase patient's passed  time in a consultation
                 medic_rate = self.medicDict[singleAction[0]].getRate()
                 new_s.patientDict[str(singleAction[1])].incPassedTime(float(medic_rate),1)
@@ -227,11 +225,6 @@ class PDMAProblem(search.Problem):
         for x in new_s.remainingPatients.keys():
             if x not in patients_attended:
                 new_s.patientDict[str(x)].incPassedTime()
-
-            ##Actions não deve deixar isto acontecer!
-            # Check if any patient has exceeded the Maximum Waiting Time 
-            # if new_s.getPatientDict()[str(x)].getTimePassed() > self.getLabelDict()[new_s.getPatientDict()[str(x)].getLabel()].getMaxWaitingTime():
-            #        new_s.deadend = 1
         
         
         return new_s
@@ -260,8 +253,8 @@ class PDMAProblem(search.Problem):
 
     def load(self,f):
         initialCost = 0
-        # if(".txt" in f):
-        #         prob_file = open(f,"r")
+        #if(".txt" in f):
+        #    f = open(f,"r")
         line_info = f.readlines()
         for line in line_info:
             if ("MD" in line):
@@ -305,8 +298,37 @@ class PDMAProblem(search.Problem):
             return False
 
     def heuristic(self, n):
-        attenuation = 0.0
-        bias =  1 - (len(n.state.remainingPatients.keys())/len(n.state.patientDict.keys()))
-        weight = n.state.cost*bias
-        return -weight
+        ns = deepcopy(n.state)
+
+        my_cost = 0
+        
+        #Perform this operation number of doctors times
+        for i in range(len(self.medicDict)):
+
+            #Check if there are any patients left
+            if bool(ns.remainingPatients) == True:
+
+                max_val = 0
+                max_key = 0
+
+                #Find the patient who has been waiting for the longest time 
+                for patient in ns.remainingPatients:
+                    if ns.remainingPatients[patient].timePassed >= max_val:
+                        max_val = ns.remainingPatients[patient].timePassed
+                        max_key = patient
+
+                #Remove the patient from the remaing patients dictionary
+                del ns.remainingPatients[max_key]
+
+
+        #Increment every remaining patient's waiting time
+        for x in ns.remainingPatients:
+                ns.patientDict[str(x)].incPassedTime()
+
+        #Calculate this state's cost
+        for key in ns.patientDict:
+            my_cost += ns.patientDict[key].getTimePassed()**2
+
+        
+        return (my_cost - n.state.cost)
         

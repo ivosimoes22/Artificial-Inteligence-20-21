@@ -260,23 +260,23 @@ class PDMAProblem(search.Problem):
 
     def load(self,f):
         initialCost = 0
-        if(".txt" in f):
-                prob_file = open(f,"r")
-                line_info = prob_file.readlines()
-                for line in line_info:
-                    if ("MD" in line):
-                        temp = line.split()
-                        temp.append(0)
-                        self.medicDict[str(temp[1])] = Doctor(temp[1], temp[2])
-                    elif("PL" in line):
-                        temp = line.split()
-                        self.labelDict[str(temp[1])] = Label(temp[1], temp[2], temp[3])
-                    elif("P " in line):
-                        temp = line.split()
-                        temp.append(0)
-                        self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
-        else:
-            sys.exit("Wrong file format, exiting...\n")
+        # if(".txt" in f):
+        #         prob_file = open(f,"r")
+        line_info = f.readlines()
+        for line in line_info:
+            if ("MD" in line):
+                temp = line.split()
+                temp.append(0)
+                self.medicDict[str(temp[1])] = Doctor(temp[1], temp[2])
+            elif("PL" in line):
+                temp = line.split()
+                self.labelDict[str(temp[1])] = Label(temp[1], temp[2], temp[3])
+            elif("P " in line):
+                temp = line.split()
+                temp.append(0)
+                self.patientDict[str(temp[1])] = Patient(temp[1], temp[2], temp[3])
+        # else:
+        #     sys.exit("Wrong file format, exiting...\n")
 
         for key in self.patientDict:
             initialCost += self.patientDict[key].getTimePassed()**2
@@ -292,16 +292,16 @@ class PDMAProblem(search.Problem):
             for singleConsultation in medicConsultations:
                 f.write(singleConsultation + " ")
             f.write("\n")
-        f.close()
+        #f.close()
 
     def search(self, p):
         #self.solution = search.astar_search(p, p.heuristic,True)
         self.solution = search.uniform_cost_search(p)
         if self.solution  is not None:
-            print("Found Solution")
+            #print("Found Solution")
             return True
         else: 
-            print("Infeas")
+            #print("Infeas")
             return False
 
     def heuristic(self, n):

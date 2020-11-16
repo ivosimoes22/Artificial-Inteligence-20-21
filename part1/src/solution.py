@@ -7,9 +7,10 @@ from collections import defaultdict
 from copy import deepcopy, copy
 
 class Doctor():
-    def __init__(self, code, efficiencyRate):
+    def __init__(self, code, efficiencyRate, index):
         self.code = code
         self.rate = efficiencyRate
+        self.index = index
 
     #getters
     def getCode(self):
@@ -101,6 +102,7 @@ class PDMAProblem(search.Problem):
         self.patientDict = {}
         self.initial = State()
         self.solution = 0
+        self.doctor_similarity = []  #holds every doctor index with same efficiency
     
     #Getters
     def getMedicDict(self):
@@ -160,7 +162,14 @@ class PDMAProblem(search.Problem):
                 if urg not in i:
                     invalid = 1
                     #print("bruh moment")
-                    break         
+                    break    
+            
+            #uses doctor efficency redundacy to filter out actions, still checkin if this is big brain or small brains
+            for redun_index in self.doctor_similarity:
+                if i[redun_index[0]] > i[redun_index[1]]:
+                    invalid = 1
+                    break
+
             #[x,x,x,x,2,x]->[x,x,x,3,x]       
             for redun in same_gang: #ex.[2,3]
                 try: 
@@ -241,11 +250,14 @@ class PDMAProblem(search.Problem):
     def load(self,f):
         initialCost = 0
         line_info = f.readlines()
+        count_med = 0
+        doc_sim_app = self.doctor_similarity.append()
         for line in line_info:
             if ("MD" in line):
                 temp = line.split()
                 temp.append(0)
-                self.medicDict[str(temp[1])] = Doctor(temp[1], temp[2])
+                self.medicDict[str(temp[1])] = Doctor(temp[1], temp[2],count_med) 
+                count_med += 1
             elif("PL" in line):
                 temp = line.split()
                 self.labelDict[str(temp[1])] = Label(temp[1], temp[2], temp[3])
@@ -257,6 +269,12 @@ class PDMAProblem(search.Problem):
         for key in self.patientDict:
             initialCost += self.patientDict[key].getTimePassed()**2
 
+        #code below returns all index combinations of 2 doctors that have the same efficiency, to be used in 
+        # action formulation to remove redundant actions
+        for x in combinations(list(self.medicDict.keys()),2):
+            if(self.medicDict[x[0]].rate == self.medicDict[x[1]].rate):
+                doc_sim_app([self.medicDict[x[0]].index,self.medicDict[x[1]].index])
+    
         self.initial = State(self.patientDict,self.patientDict, None, self.medicDict.keys(), initialCost)
 
         

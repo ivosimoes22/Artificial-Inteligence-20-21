@@ -167,8 +167,9 @@ class PDMAProblem(search.Problem):
             #uses doctor efficency redundacy to filter out actions, still checkin if this is big brain or small brains
             for redun_index in self.doctor_similarity:
                 if i[redun_index[0]] > i[redun_index[1]]:
-                    invalid = 1
-                    break
+                    if not i[redun_index[0]] and i[redun_index[1]]:
+                        invalid = 1
+                        break
 
             #[x,x,x,x,2,x]->[x,x,x,3,x]       
             for redun in same_gang: #ex.[2,3]
@@ -251,7 +252,7 @@ class PDMAProblem(search.Problem):
         initialCost = 0
         line_info = f.readlines()
         count_med = 0
-        doc_sim_app = self.doctor_similarity.append()
+        doc_sim_app = self.doctor_similarity.append
         for line in line_info:
             if ("MD" in line):
                 temp = line.split()

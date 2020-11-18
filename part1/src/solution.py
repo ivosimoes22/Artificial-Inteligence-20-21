@@ -6,6 +6,8 @@ from itertools import permutations, combinations
 from collections import defaultdict
 from copy import deepcopy, copy
 
+from utils import print_table
+
 class Doctor():
     def __init__(self, code, efficiencyRate, index):
         self.code = code
@@ -209,11 +211,11 @@ class PDMAProblem(search.Problem):
         for singleAction in a:
             if singleAction[1] != "empty":
                 #Increase patient's passed  time in a consultation
-                medic_rate = self.medicDict[singleAction[0]].getRate()
+                medic_rate = self.medicDict[singleAction[0]].rate
                 new_s.patientDict[str(singleAction[1])].incPassedTime(float(medic_rate),1)
 
                 #Remove the patient from the patient's dictionary if he has reached the total Consultation Time
-                if new_s.patientDict[str(singleAction[1])].getTimePassedConsult() >= self.getLabelDict()[new_s.patientDict[str(singleAction[1])].getLabel()].getConsultationTime():
+                if new_s.patientDict[str(singleAction[1])].timePassedConsult >= self.labelDict[new_s.patientDict[str(singleAction[1])].labelCode].consultationTime:
                     del new_s.remainingPatients[str(singleAction[1])]
 
                 #Store patients who are in a consultation 
@@ -225,7 +227,8 @@ class PDMAProblem(search.Problem):
         for x in new_s.remainingPatients.keys():
             if x not in patients_attended:
                 new_s.patientDict[str(x)].incPassedTime()
-          
+        
+        
         return new_s
 
 
@@ -239,8 +242,8 @@ class PDMAProblem(search.Problem):
 
         state2_cost = 0
 
-        for key in s2.patientDict.keys():
-            state2_cost += s2.patientDict[key].getTimePassed()**2    
+        for key, p in s2.patientDict.items():
+            state2_cost += p.timePassed**2    
 
         s2.cost = state2_cost
         #s2.getStatus()
@@ -296,7 +299,7 @@ class PDMAProblem(search.Problem):
         else:
             return False
 
-
+    '''
     def heuristic(self, n):
         ns = deepcopy(n.state)
 
@@ -330,5 +333,57 @@ class PDMAProblem(search.Problem):
             my_cost += ns.patientDict[key].getTimePassed()**2
 
         
+        return (my_cost - n.state.cost)
+    
+    '''
+    def heuristic(self, n):
+        s=n.state
+        my_cost = 0
+        i = 0
+        time_to_complete = []
+        time_waited = []
+        complete_app = time_to_complete.append
+        waited_app = time_waited.append
+
+        if len(s.remainingPatients) <= len(self.medicDict):
+            return 0
+
+        for patient in s.patientDict:
+            if (self.labelDict[s.patientDict[patient].labelCode].consultationTime - s.patientDict[patient].timePassedConsult) <= 0:
+                my_cost += s.patientDict[patient].timePassed**2
+
+        for patient in s.remainingPatients:
+            complete_app(self.labelDict[s.patientDict[patient].labelCode].consultationTime - n.state.patientDict[patient].timePassedConsult)
+            waited_app(n.state.patientDict[patient].timePassed)
+
+        time_to_complete.sort(key=int)
+        time_waited.sort(key=int, reverse=True)
+
+        while len(self.medicDict) < len(time_to_complete):
+            #print(tuple(time_to_complete))
+            #print(tuple(time_waited))
+            #input()
+            for i in range(len(time_to_complete)):
+                if i < len(self.medicDict):
+                    time_to_complete[i] -= 5
+                else:
+                    time_waited[i] += 5
+            j=0 #avoid index -1
+            for i in range(len(self.medicDict)):
+                if time_to_complete[j] <= 0:
+                    del time_to_complete[j]
+                    my_cost += time_waited[j]**2
+                    del time_waited[j]
+                    j -= 1
+                else: 
+                    break
+                j += 1
+
+        for i in range(len(time_waited)):
+            my_cost += time_waited[i]**2
+
+        if (my_cost - n.state.cost) < 0:
+            print(my_cost - n.state.cost)
+            input()
         return (my_cost - n.state.cost)
         

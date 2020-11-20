@@ -341,6 +341,12 @@ class PDMAProblem(search.Problem):
                     del time_to_complete[j]
                     del time_waited[j]
 
+                    #sort the times to complete consultation (smallest to biggest)
+                    #time_to_complete.sort(key=int)
+                    
+                    #sort the waited times (biggest to smallest)
+                    time_waited.sort(key=int, reverse=True)
+
                     #Decrement the iterator's value since we removed one index
                     j -= 1
 

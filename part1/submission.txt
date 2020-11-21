@@ -1,0 +1,29 @@
+1- Our state representation is a class composed of by a dictionary of objects where each object contains the information regarding a patient, a dictionary of objects containing the remaining patients that have yet not been fully attended by doctors as objects, a dictionary of lists with the consultations that have been appointed to each doctor and the cost of the state.
+Our operators are computed using all permutations among patients remaining to be attended, distributed by the available doctors in the problem. Each operator is represented as a list of tuples, where each tuple is a single allocation of a patient to a certain doctor.
+Each state computes several operators, of which some may end up being redundant due to resulting in equal states according to future operators and cost metrics. Redundant actions can be identified and filtered in order to reduce computation time, by just executing one of them.
+Another particularity to have in consideration when computing the operators is identifying patients that have reached their maximum waiting time,  meaning they must be urgently attended and all actions that don't include these patients are to be ignored.
+
+2- The method used was the A-Star search algorithm which was chosen due to being an informed search algorithm that 
+is both complete and optimal.
+ For each state, we compute operators in order to proceed to the next state, which returns a cost. Minimizing the cost of each operator chosen until reaching the solution returns the best result. A Star excels at this by using both path cost and heuristic (estimated cost to goal state) to return only the best possible path. Using an heuristic function improves computation time by giving priority to operators that show highest promise in following the optimal path, provided that the function is admissible.
+
+3- 
+The algorithm is based on the best first search algorithm which explores a graph by expanding the node with the least cost. 
+In the A Star algorithm, this cost is computed by adding the path cost to the present node to an heuristic value, and as long as the heuristic function is admissible, it will guarantee the optimal solution.
+Our heuristic sorts for each state the remaining patients' remaining time in consultation and waiting time, from lowest to highest and vice versa, respectively, in order to replicate an ideal scenario, where the patients that have been waiting for the longest time are also the patients that need the shortest amount of time in consultation to be dispatched.
+Then assuming that all medic rates are one (the maximum value), we can choose the best patients to alocate to consultation and compute their contribution to the cost upon being dispatched.
+This process repeats itself until the patients that remain equal the number of doctors available, meaning that their waiting time will not increase anymore and the cost will stagnate.
+The sum of the square value of all total waiting time of the patients upon the process is the ideal cost of the projected goal state, and subtracting the cost of the evaluated state will return us the heuristic value.
+This value is used in order to influence the choosing of the next state towards a closer and optimal goal state.
+Theoretically this guarantees the return of an optimal solution independently of the problem, however given that we did not reach such solution in the 6th private test, there might be some implementation errors in our code.
+
+4-
+                Generated Nodes                Depth of the solution             Effective Branching Factor
+PUB1                17                                             6                                                 1.581
+PUB2 - Infeasible              
+PUB3                12                                             3                                                 2.262
+PUB4                6407                                         9                                                 3.989
+PUB5                18943                                      10                                                4.277
+PUB6                14036                                       6                                                 5.340
+PUB7                456                                           7                                                 3.146
+PUB8                750                                           4                                                 4.775

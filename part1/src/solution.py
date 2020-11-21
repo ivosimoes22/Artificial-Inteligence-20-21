@@ -263,7 +263,7 @@ class PDMAProblem(search.Problem):
 
     #Returns true if the algorithm find a solution and returns false otherwise
     def search(self):
-        self.solution = search.astar_search(self, self.heuristic)
+        self.solution = search.astar_search(self, self.heuristic, True)
         if self.solution  is not None:
             return True
         else:

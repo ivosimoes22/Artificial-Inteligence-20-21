@@ -5,11 +5,11 @@ from functools import reduce
 
 import numpy as np
 from agents import Agent
-#from utils import *
+from utils import *
 import random
-from utils import (product, argmax, element_wise_product, matrix_multiplication, vector_to_diagonal, vector_add,
-                   scalar_vector_product, inverse_matrix, weighted_sample_with_replacement, isclose, probability,
-                   normalize, extend)
+# from utils import (product, argmax, element_wise_product, matrix_multiplication, vector_to_diagonal, vector_add,
+#                    scalar_vector_product, inverse_matrix, weighted_sample_with_replacement, isclose, probability,
+#                    normalize, extend)
 
 
 def DTAgentProgram(belief_state):

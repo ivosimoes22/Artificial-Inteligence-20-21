@@ -1,0 +1,13 @@
+D covid common_cold flu asthma
+S fever covid flu
+S nose_clogged common_cold flu
+S shortness_of_breath covid asthma
+S fatigue covid common_cold asthma
+E pcr covid 0.6893 0.3426
+E chest_xray common_cold 0.9893 0.0526
+E feno asthma 0.8932 0.1213
+E ridt flu 0.8321 0.2423
+M pcr F
+M chest_xray T feno F
+M ridt F chest_xray F
+P 0.25 

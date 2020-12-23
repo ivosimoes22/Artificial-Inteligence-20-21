@@ -8,11 +8,7 @@ def main():
     f = open(file_name, "r")
 
     a = MDProblem(f)
-    a.printDisease()
-    print("\n")
-    a.printExam()
-    print("\n")
-    a.printMeas()
+    a.createBayesNework()
 
 
 

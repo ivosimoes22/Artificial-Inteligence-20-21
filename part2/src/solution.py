@@ -1,4 +1,4 @@
-from probability import JointProbDist
+import probability
 
 class Exam():
     def __init__(self, name, disease, TPR, FPR):
@@ -26,7 +26,10 @@ class MDProblem():
         self.measDict = {}
         self.p = 0
         self.load(fh)
-        
+        self.BayesNet = probability.BayesNet()
+
+
+#######Print Methods###########
     def printDisease(self):
         for disease in self.diseaseDict.keys():
             print(self.diseaseDict[disease].name)
@@ -47,6 +50,25 @@ class MDProblem():
                 print(i.name)
                 print(i.result)
             print("\n")
+####################################
+
+    def createBayesNework(self):
+        #The time corresponds to the measures taken
+        for t in range(1,len(self.measDict)+1):
+            #Go through all the diseases
+            for d in self.diseaseDict.keys():
+        
+                #Create a unique name for the current time step
+                D = self.diseaseDict[d].name + "__" + str(t)
+
+                #If in initial time step
+                if t == 1:                                
+                    #Add disease with 0.5 prob because we dont know and no parents
+                    self.BayesNet.add([D,'', 0.5])
+                else:
+                    #Look for the parents - disease that are on t-1 with the sharing symptom
+
+
 
     def solve(self):
         return(disease, likelihood)

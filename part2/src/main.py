@@ -8,7 +8,7 @@ def main():
     f = open(file_name, "r")
 
     a = MDProblem(f)
-    a.createBayesNework()
+    a.solve()
 
 
 

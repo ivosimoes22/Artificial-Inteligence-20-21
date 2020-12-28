@@ -1,4 +1,4 @@
-from part2.src.probability import BayesNet, elimination_ask
+from probability import BayesNet, elimination_ask, likelihood_weighting
 import probability
 from itertools import product
 
@@ -57,11 +57,12 @@ class MDProblem():
 ####################################
 
     def get_related_diseases(self):
-        for d in self.diseaseDict:
-            for s in d.symptom:
-                for f in self.diseaseDict:
-                    if s in f.symptom:
-                        d.related.append(f.name)
+        for d in self.diseaseDict.keys():
+            for s in self.diseaseDict[d].symptoms:
+                for f in self.diseaseDict.keys():
+                    if (s in self.diseaseDict[f].symptoms) and (self.diseaseDict[f].name not in self.diseaseDict[d].related):
+                        self.diseaseDict[d].related.append(self.diseaseDict[f].name)
+
 
     def assert_parents(self, name,timestamp): 
         parents = ""
@@ -81,34 +82,40 @@ class MDProblem():
                 #If in initial time step
                 if t == 1:                                
                     #Add disease with 0.5 prob because we dont know and no parents
+                    #print("disease:" + str(D))
                     self.BayesNet.add([D,'', 0.5])
                 else:
                     #Look for the parents - disease that are on t-1 with the sharing symptom
-                    
-                    self.BayesNet.add([D,assert_parents(d, t), get_prob_table(len(self.diseaseDict[d].related), t)])
-
-            D = self.examDict[self.measDict[t].name].name
+                    #print("disease:" + str(D))
+                    self.BayesNet.add([D,self.assert_parents(d, t), self.get_prob_table(len(self.diseaseDict[d].related), t)])
+            print(t)
+        #The time corresponds to the measures taken
+        for t in range(1, len(self.measDict.keys())+1):
+            #print(t)
+            E = self.examDict[self.measDict[t].name].name + "__" + str(t)
             parent = self.examDict[self.measDict[t].name].disease + "__" + str(t)
-            self.BayesNet.add(D, parent, get_prob_table(1, t ,"Exam", D)) 
+            exam = self.examDict[self.measDict[t].name].name
+            print(str(parent))
+            self.BayesNet.add([E, parent, self.get_prob_table(1, "Exam", exam)]) 
 
 
-    def get_prob_table(self, nParents, t, nodeType="Disease", examName=None):
+    def get_prob_table(self, nParents, nodeType="Disease", examName=None):
         
         if nParents == 1:
             if nodeType == "Disease":
                 return {True: 1, False: 0}
 
             elif nodeType == "Exam":
-                tpr = self.examDict[examName].tpr
-                fpr = self.examDict[examName].fpr
+                tpr = self.examDict[examName].TPR
+                fpr = self.examDict[examName].FPR
                 return {True: tpr, False: fpr}
 
         else:
             cpt = {}
             combinations = list(product([True, False], repeat=nParents))
-            for i in range(len(combinations)/2):
+            for i in range(int(len(combinations)/2)):
                 cpt[combinations[i]] = 1
-            for i in range(len(combinations)/2, len(combinations)-1):
+            for i in range(int(len(combinations)/2), len(combinations)-1):
                 cpt[combinations[i]] = self.p
             cpt[combinations[-1]] = 0
             return cpt
@@ -117,6 +124,7 @@ class MDProblem():
     def solve(self):
 
         measures = {}
+        diseaseProb = {}
         for t in self.measDict.keys():
             m = self.measDict[t].name + '__' + str(t)
 
@@ -127,16 +135,18 @@ class MDProblem():
 
         for disease in self.diseaseDict.keys():
             d = disease + '__' + str(len(self.measDict))
-            prob = probability.elimination_ask(d, measures, self.BayesNet).show_approx()
-            print(str(prob))
+            p = probability.elimination_ask(d, measures, self.BayesNet).show_approx()
+            print(str(disease) + ": " + str(p))
+            prob = float(p.split(',')[1].split(': ')[1])
             diseaseProb[disease] = prob
 
 
-        # max_prob = max(diseaseProb)
-        # disease, likelihood = [max_prob, ]
-        
-        return(disease, likelihood)
-
+        disease = max(diseaseProb, key=diseaseProb.get)
+        likelihood = diseaseProb[disease]
+        print("\n")
+        print(str(disease) + ": " + str(likelihood))
+        return (disease, likelihood)
+    
     
     def load(self, f):
         
@@ -163,14 +173,14 @@ class MDProblem():
                 temp = line.split()
                 self.measDict[c] = []
                 for i in range(1, len(temp), 2):
-                    self.measDict[c].append(Measurement(temp[i], temp[i+1]))
-                c += 1
+                    self.measDict[c] = (Measurement(temp[i], temp[i+1]))
+                    c += 1
 
             elif("P " in line):
                 temp = line.split()
                 self.p = float(temp[1])
 
-        get_related_diseases()
+        self.get_related_diseases()
         
         
     
